@@ -30,3 +30,16 @@ htmlcov/
 
 # Logs
 *.log
+# Python
+
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Secrets
+OPENROUTER_API_KEY*
