@@ -10,8 +10,12 @@ from schemas.resume import ResumeAnalysis
 # Load environment variables
 load_dotenv()
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+headers = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "Content-Type": "application/json",
+    "HTTP-Referer": "https://codeclutch-backend.onrender.com",
+    "X-Title": "CodeClutch"
+}
 
 
 def analyze_resume(resume_text: str) -> ResumeAnalysis:
@@ -56,7 +60,7 @@ Return ONLY the JSON, nothing else."""
     }
     
     payload = {
-        "model": "meta-llama/llama-3.1-8b-instruct",
+        "model": "openchat/openchat-7b",
         "messages": [
             {
                 "role": "user",
