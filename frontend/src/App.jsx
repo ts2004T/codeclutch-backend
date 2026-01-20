@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 import logo from "./assets/logo.png";
 
@@ -6,15 +6,43 @@ import logo from "./assets/logo.png";
 const API_BASE = import.meta.env.VITE_API_BASE || "https://codeclutch-backend.onrender.com";
 
 function App() {
+  // Load saved state from localStorage
+  const loadSavedState = () => {
+    try {
+      const saved = localStorage.getItem('codeclutch-state');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (err) {
+      console.error('Error loading saved state:', err);
+    }
+    return null;
+  };
+
+  const savedState = loadSavedState();
+
   // State management for user input and API responses
-  const [resumeText, setResumeText] = useState("");
-  const [skills, setSkills] = useState([]);
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [feedback, setFeedback] = useState(null);
+  const [resumeText, setResumeText] = useState(savedState?.resumeText || "");
+  const [skills, setSkills] = useState(savedState?.skills || []);
+  const [questions, setQuestions] = useState(savedState?.questions || []);
+  const [answers, setAnswers] = useState(savedState?.answers || {});
+  const [feedback, setFeedback] = useState(savedState?.feedback || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [activeStep, setActiveStep] = useState(1);
+  const [activeStep, setActiveStep] = useState(savedState?.activeStep || 1);
+
+  // Persist state to localStorage whenever it changes
+  useEffect(() => {
+    const stateToSave = {
+      resumeText,
+      skills,
+      questions,
+      answers,
+      feedback,
+      activeStep
+    };
+    localStorage.setItem('codeclutch-state', JSON.stringify(stateToSave));
+  }, [resumeText, skills, questions, answers, feedback, activeStep]);
 
   // Helper function to make API calls with error handling
   const makeApiCall = async (endpoint, payload) => {
@@ -112,6 +140,7 @@ function App() {
     setFeedback(null);
     setError("");
     setActiveStep(1);
+    localStorage.removeItem('codeclutch-state');
   };
 
   // Main UI: Renders the interview prep flow
@@ -219,53 +248,67 @@ function App() {
             <h3>Step 4: Your Interview Performance</h3>
 
             {/* Individual question feedback */}
-            {feedback.evaluations.map((e, i) => (
-              <div key={i} className="feedback-block">
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "0.75rem" }}>
-                  <p style={{ margin: 0, flex: 1 }}>
-                    <strong>Q{i + 1}. {e.question}</strong>
-                  </p>
-                  <div className="score-display">{e.score}/10</div>
+            {feedback.evaluations && feedback.evaluations.length > 0 ? (
+              feedback.evaluations.map((e, i) => (
+                <div key={i} className="feedback-block">
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "0.75rem" }}>
+                    <p style={{ margin: 0, flex: 1 }}>
+                      <strong>Q{i + 1}. {e.question}</strong>
+                    </p>
+                    <div className="score-display">{e.score}/10</div>
+                  </div>
+                  <p style={{ color: "#475569", lineHeight: "1.7" }}>{e.feedback}</p>
                 </div>
-                <p style={{ color: "#475569", lineHeight: "1.7" }}>{e.feedback}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p style={{ color: "#64748b" }}>No evaluation data available.</p>
+            )}
 
             {/* Strengths section */}
-            <h4>💪 What You Did Well</h4>
-            <div className="strengths-list">
-              <ul>
-                {feedback.strengths.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            </div>
+            {feedback.strengths && feedback.strengths.length > 0 && (
+              <>
+                <h4>💪 What You Did Well</h4>
+                <div className="strengths-list">
+                  <ul>
+                    {feedback.strengths.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
 
             {/* Improvements section */}
-            <h4>🎯 Areas to Focus On</h4>
-            <div className="improvements-list">
-              <ul>
-                {feedback.improvements.map((i, idx) => (
-                  <li key={idx}>{i}</li>
-                ))}
-              </ul>
-            </div>
+            {feedback.improvements && feedback.improvements.length > 0 && (
+              <>
+                <h4>🎯 Areas to Focus On</h4>
+                <div className="improvements-list">
+                  <ul>
+                    {feedback.improvements.map((i, idx) => (
+                      <li key={idx}>{i}</li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
 
             {/* Overall readiness */}
-            <div style={{ 
-              padding: "1.5rem", 
-              background: "linear-gradient(135deg, #f0f7ff, #e0f2fe)", 
-              border: "1px solid #bfdbfe", 
-              borderRadius: "12px",
-              marginTop: "1.5rem"
-            }}>
-              <p style={{ margin: 0, fontSize: "0.95rem", color: "#0c4a6e" }}>
-                <strong>📊 Interview Readiness Summary:</strong>
-              </p>
-              <p style={{ margin: "0.5rem 0 0 0", color: "#0c4a6e", lineHeight: "1.7" }}>
-                {feedback.overall_readiness_summary}
-              </p>
-            </div>
+            {feedback.overall_readiness_summary && (
+              <div style={{ 
+                padding: "1.5rem", 
+                background: "linear-gradient(135deg, #f0f7ff, #e0f2fe)", 
+                border: "1px solid #bfdbfe", 
+                borderRadius: "12px",
+                marginTop: "1.5rem"
+              }}>
+                <p style={{ margin: 0, fontSize: "0.95rem", color: "#0c4a6e" }}>
+                  <strong>📊 Interview Readiness Summary:</strong>
+                </p>
+                <p style={{ margin: "0.5rem 0 0 0", color: "#0c4a6e", lineHeight: "1.7" }}>
+                  {feedback.overall_readiness_summary}
+                </p>
+              </div>
+            )}
 
             {/* Start over button */}
             <button 
