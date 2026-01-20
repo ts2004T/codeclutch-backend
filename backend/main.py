@@ -83,13 +83,27 @@ async def analyze_resume_endpoint(input_data: ResumeTextInput):
         HTTPException: If analysis fails
     """
     try:
+        # Validate input
+        if not input_data.resume_text or not input_data.resume_text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Resume text cannot be empty"
+            )
+        
         # Clean the resume text
         cleaned_text = clean_resume_text(input_data.resume_text)
         
-        # Call the resume agent
+        # Call the resume agent (Pydantic AI with error handling)
         analysis = analyze_resume(cleaned_text)
         return analysis
         
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -122,16 +136,27 @@ async def analyze_resume_pdf_endpoint(file: UploadFile = File(...)):
         # Read PDF bytes
         pdf_bytes = await file.read()
         
+        if not pdf_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail="PDF file is empty"
+            )
+        
         # Extract text from PDF
         resume_text = extract_text_from_pdf(pdf_bytes)
         cleaned_text = clean_resume_text(resume_text)
         
-        # Call the resume agent
+        # Call the resume agent (Pydantic AI with error handling)
         analysis = analyze_resume(cleaned_text)
         return analysis
         
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -155,18 +180,23 @@ async def generate_questions_endpoint(input_data: QuestionGenerationInput):
     """
     try:
         # Validate input
-        if not input_data.skills:
+        if not input_data.skills or len(input_data.skills) == 0:
             raise HTTPException(
                 status_code=400,
                 detail="Skills list cannot be empty"
             )
         
-        # Call the question agent
+        # Call the question agent (Pydantic AI with error handling)
         questions = generate_questions(input_data.skills)
         return questions
         
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -190,18 +220,23 @@ async def evaluate_answers_endpoint(input_data: AnswerEvaluationInput):
     """
     try:
         # Validate input
-        if not input_data.qa_pairs:
+        if not input_data.qa_pairs or len(input_data.qa_pairs) == 0:
             raise HTTPException(
                 status_code=400,
                 detail="Question-answer pairs list cannot be empty"
             )
         
-        # Call the evaluation agent
+        # Call the evaluation agent (Pydantic AI with error handling)
         feedback = evaluate_answers(input_data.qa_pairs)
         return feedback
         
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,

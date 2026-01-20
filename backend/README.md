@@ -1,35 +1,81 @@
 # CodeClutch Backend
 
+**AI-powered interview preparation using Pydantic AI & FastAPI**
+
 AI-powered interview preparation platform for Software Engineering roles, designed for college students.
 
 ## Overview
 
-CodeClutch is a FastAPI-based backend that leverages AI to help students prepare for technical interviews. It analyzes resumes, generates relevant interview questions, and evaluates answers with detailed feedback.
+CodeClutch is a FastAPI-based backend that leverages **Pydantic AI** and OpenRouter LLM to help students prepare for technical interviews. It features a **multi-agent system** that:
+
+1. **Analyzes resumes** using ResumeAnalysisAgent (Pydantic AI)
+2. **Generates interview questions** using QuestionGenerationAgent (Pydantic AI)
+3. **Evaluates answers** using AnswerEvaluationAgent (Pydantic AI)
+
+All agent responses are **fully type-safe** with Pydantic schema validation.
 
 ## Features
 
-- **Resume Analysis**: Upload resume (text or PDF) to extract skills, projects, and experience level
-- **Question Generation**: Generate 5 targeted interview questions based on candidate's skills
-- **Answer Evaluation**: Get detailed feedback on interview answers with scores (0-10) and improvement suggestions
+- ✅ **Resume Analysis**: Upload resume (text or PDF) to extract skills, projects, and experience level
+- ✅ **Question Generation**: Generate 5 targeted interview questions based on candidate's skills
+- ✅ **Answer Evaluation**: Get detailed feedback on interview answers with scores (0-10) and improvement suggestions
+- ✅ **Robust Error Handling**: Try/except with 1 automatic retry on LLM failures
+- ✅ **Production-Ready**: Deployed on Render with environment variable support
+- ✅ **Type-Safe**: All responses validated with Pydantic schemas
 
 ## Project Structure
 
 ```
-codeclutch-backend/
-├── main.py                  # FastAPI application with endpoints
-├── agents/
-│   ├── resume_agent.py      # Resume analysis agent
-│   ├── question_agent.py    # Question generation agent
-│   └── evaluation_agent.py  # Answer evaluation agent
-├── schemas/
-│   ├── resume.py            # Pydantic models for resume data
-│   ├── questions.py         # Pydantic models for questions
-│   └── evaluation.py        # Pydantic models for evaluation
+backend/
+├── main.py                  # FastAPI app & endpoints with error handling
+├── agents/                  # Pydantic AI agents (type-safe LLM integration)
+│   ├── resume_agent.py      # ResumeAnalysisAgent
+│   ├── question_agent.py    # QuestionGenerationAgent
+│   └── evaluation_agent.py  # AnswerEvaluationAgent
+├── schemas/                 # Pydantic models (strict output validation)
+│   ├── resume.py            # ResumeAnalysis model
+│   ├── questions.py         # QuestionSet model
+│   └── evaluation.py        # InterviewFeedback model
 ├── utils/
 │   └── pdf_parser.py        # PDF text extraction utility
-├── requirements.txt         # Python dependencies
-└── .env.example            # Environment variables template
+├── requirements.txt         # Python dependencies (includes pydantic-ai)
+├── runtime.txt              # Python version (3.11)
+├── .env.example             # Environment template
+└── Procfile                 # Render deployment config
 ```
+
+## Architecture: Pydantic AI Agents
+
+Each agent is built with **Pydantic AI** for type-safe LLM integration:
+
+### 1. ResumeAnalysisAgent
+
+- **Model**: nvidia/nemotron-3-nano-30b-a3b:free
+- **Input**: Resume text
+- **Output Schema**: `ResumeAnalysis` (name, skills, projects, experience_level)
+- **Error Handling**: Automatic retry on failure
+
+### 2. QuestionGenerationAgent
+
+- **Model**: nvidia/nemotron-3-nano-30b-a3b:free
+- **Input**: List of skills
+- **Output Schema**: `QuestionSet` (5 questions with difficulty & skill focus)
+- **Error Handling**: Automatic retry on failure
+
+### 3. AnswerEvaluationAgent
+
+- **Model**: nvidia/nemotron-3-nano-30b-a3b:free
+- **Input**: Question-answer pairs
+- **Output Schema**: `InterviewFeedback` (scores, feedback, strengths, improvements)
+- **Error Handling**: Automatic retry on failure
+
+## Why Pydantic AI?
+
+✅ **Type-Safe**: All LLM outputs guaranteed to match Pydantic schemas  
+✅ **Validated**: Automatic validation of agent responses  
+✅ **Reliable**: Built-in error handling and retry logic  
+✅ **Production-Ready**: Works seamlessly with FastAPI  
+✅ **Cost-Effective**: Compatible with free OpenRouter LLM models
 
 ## Setup
 
@@ -59,25 +105,29 @@ codeclutch-backend/
    cp .env.example .env
    ```
 
-   Edit `.env` and add your OpenRouter API key:
+   Edit `.env` and add your **free OpenRouter API key** from https://openrouter.ai/keys:
 
    ```
-   OPENROUTER_API_KEY=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
+   OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
    ```
+
+   The free model used is: `nvidia/nemotron-3-nano-30b-a3b:free`
 
 5. **Run the application**
-
-   ```bash
-   python main.py
-   ```
-
-   Or with uvicorn directly:
 
    ```bash
    uvicorn main:app --reload
    ```
 
+   Or:
+
+   ```bash
+   python main.py
+   ```
+
 The API will be available at `http://localhost:8000`
+
+**API Documentation** (Swagger UI): `http://localhost:8000/docs`
 
 ## API Endpoints
 

@@ -1,89 +1,81 @@
 """
-Question Generator Agent.
-Generates interview questions based on candidate skills using LLM.
+Question Generator Agent - Pydantic AI Implementation.
+Generates interview questions based on candidate skills using pydantic-ai with OpenRouter.
 """
+
 import os
-import requests
 from typing import List
 from dotenv import load_dotenv
+from pydantic_ai import Agent
 from schemas.questions import QuestionSet
 
 # Load environment variables
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+if not OPENROUTER_API_KEY:
+    raise RuntimeError("OPENROUTER_API_KEY environment variable is not set")
+
+# Define the Pydantic AI agent for question generation
+question_generation_agent = Agent(
+    model="openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
+    api_key=OPENROUTER_API_KEY,
+    system_prompt="""You are an expert technical interviewer creating interview questions.
+Your task is to generate relevant, practical interview questions for software engineers based on their skills.
+
+When generating questions:
+1. Create questions that are specific to the provided skills
+2. Include a mix of difficulty levels: 2 basic, 2 medium, 1 hard
+3. Ensure at least one question is a deep dive question
+4. Focus on practical, real-world scenarios
+5. Make questions appropriate for technical interviews
+
+Return exactly 5 questions with clear difficulty levels and skill focus.""",
+)
 
 
 def generate_questions(skills: List[str]) -> QuestionSet:
     """
-    Generate interview questions based on candidate's skills.
+    Generate interview questions based on candidate's skills using Pydantic AI.
     
     Args:
         skills: List of technical skills extracted from resume
         
     Returns:
-        QuestionSet: Set of 5 interview questions
+        QuestionSet: Set of 5 interview questions with varying difficulty levels
         
     Raises:
-        Exception: If LLM call or parsing fails
+        Exception: If generation fails after retries
     """
-    # Join skills into a readable format
-    skills_text = ", ".join(skills)
+    if not skills or len(skills) == 0:
+        raise ValueError("At least one skill must be provided")
     
-    # Construct the prompt
-    prompt = f"""You are an interview question generator for software engineering roles. Generate exactly 5 interview questions based on these skills: {skills_text}
+    skills_text = ", ".join(skills)
+    max_retries = 1
+    last_error = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            # Use pydantic-ai to run the agent
+            result = question_generation_agent.run_sync(
+                user_prompt=f"""Generate exactly 5 interview questions for a candidate with these skills: {skills_text}
 
 Requirements:
-- 2 basic questions
-- 2 medium questions  
-- 1 hard question
-- Include 1 deep_dive question (can overlap with difficulty levels)
+- 2 basic questions (fundamental concepts)
+- 2 medium questions (practical application)
+- 1 hard question (complex problem-solving)
+- Include 1 deep_dive question that explores a topic thoroughly
 
-Return ONLY valid JSON matching this exact structure (no markdown, no extra text):
-{{
-    "questions": [
-        {{
-            "question": "question text here",
-            "difficulty": "basic" or "medium" or "hard" or "deep_dive",
-            "skill_focus": "the specific skill this question tests"
-        }},
-        ...5 questions total...
-    ]
-}}
-
-Make questions specific to the skills provided. Ensure questions are practical and interview-appropriate.
-Return ONLY the JSON, nothing else."""
-
-    # Call OpenRouter API
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "model": "meta-llama/llama-3.1-8b-instruct",
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    }
-    
-    try:
-        response = requests.post(OPENROUTER_URL, json=payload, headers=headers)
-        response.raise_for_status()
-        
-        # Extract the response text
-        response_data = response.json()
-        llm_output = response_data["choices"][0]["message"]["content"].strip()
-        
-        # Parse using Pydantic
-        question_set = QuestionSet.model_validate_json(llm_output)
-        return question_set
-        
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"OpenRouter API call failed: {str(e)}")
-    except Exception as e:
-        raise Exception(f"Failed to parse LLM response: {str(e)}")
+Make questions specific to the skills provided and practical for real interviews.""",
+                result_type=QuestionSet,
+            )
+            
+            return result.data
+            
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries:
+                continue
+            else:
+                raise Exception(f"Question generation failed after {max_retries + 1} attempts: {str(last_error)}")
