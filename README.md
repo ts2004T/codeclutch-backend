@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # CodeClutch – AI-Powered Interview Preparation Platform
 
 > **Transform your interview preparation with AI. Get personalized questions and expert feedback based on your resume and skills.**
