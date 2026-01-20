@@ -1,181 +1,152 @@
-# 🚀 CodeClutch
+# CodeClutch
 
-**AI-powered interview preparation platform for Software Engineering roles**  
-Built to help college students practice real interview questions and receive structured AI feedback.
+AI-powered interview preparation platform for software engineering candidates. The backend analyzes resumes, generates targeted interview questions, and scores answers with actionable feedback. The frontend provides a guided, single-page experience to run the full flow.
 
----
+## Features
 
-## 🔍 Overview
+- Resume analysis from pasted text or PDF to extract skills, projects, and experience level
+- Skill-aware question generation with balanced difficulty (basic, medium, hard, deep-dive)
+- Answer evaluation with 0-10 scoring, strengths, improvement tips, and readiness summary
+- FastAPI backend with automatic docs (Swagger/ReDoc) and CORS enabled for the React client
+- Vite + React frontend for an end-to-end interview practice session
 
-**CodeClutch** is a full-stack generative AI application that simulates a real technical interview experience.
+## Architecture
 
-The platform:
-1. Analyzes a candidate’s resume
-2. Extracts relevant technical skills
-3. Generates role-specific interview questions
-4. Evaluates answers with detailed, actionable feedback
+- **Backend**: FastAPI, Pydantic, OpenRouter LLM calls, PDF parsing via PyPDF2. See [backend/README.md](backend/README.md) for API details.
+- **Frontend**: React (Vite). Calls backend endpoints to run the analyze → generate → evaluate flow. UI lives in [frontend/src](frontend/src).
 
-The system is built using **FastAPI**, **Pydantic**, and **LLM orchestration via OpenRouter**, with a **React + Vite** frontend.
+## Project Structure
 
----
+```
+codeclutch-backend-clean/
+├─ README.md                # Root guide (this file)
+├─ backend/                 # FastAPI service
+│  ├─ main.py               # API entrypoint
+│  ├─ requirements.txt      # Backend dependencies
+│  ├─ agents/               # LLM-powered agents
+│  │  ├─ resume_agent.py
+│  │  ├─ question_agent.py
+│  │  └─ evaluation_agent.py
+│  ├─ schemas/              # Pydantic models
+│  │  ├─ resume.py
+│  │  ├─ questions.py
+│  │  └─ evaluation.py
+│  └─ utils/                # Helpers (PDF parsing, cleaning)
+│     └─ pdf_parser.py
+└─ frontend/                # React SPA (Vite)
+  ├─ package.json          # Frontend dependencies/scripts
+  ├─ vite.config.js        # Vite config
+  └─ src/                  # App source
+    ├─ App.jsx            # Main UI flow
+    ├─ App.css            # Styling
+    ├─ main.jsx           # React entry
+    └─ assets/            # Static assets (logo, etc.)
+```
 
-## ✨ Features
+## Prerequisites
 
-### 🧠 Resume Analysis
-- Accepts resume text (PDF support included)
-- Extracts:
-  - Skills
-  - Projects
-  - Experience level (Beginner / Intermediate / Advanced)
+- Python 3.10+
+- Node.js 20+ and npm
+- OpenRouter API key (set `OPENROUTER_API_KEY` in your environment)
 
-### ❓ Interview Question Generation
-- Generates realistic interview questions
-- Covers multiple difficulty levels:
-  - Basic
-  - Medium
-  - Hard
-  - Deep-dive
-- Questions are tailored to detected skills
+## Quickstart
 
-### 📝 Answer Evaluation
-- Evaluates each answer with:
-  - Score (0–10)
-  - Per-question feedback
-- Provides:
-  - Strengths
-  - Areas for improvement
-  - Overall interview readiness summary
+### Backend (FastAPI)
 
-### 🎨 Clean Frontend UX
-- Step-by-step interview flow
-- Loading and error states
-- Minimal, readable UI focused on user experience
+1. Install dependencies
 
----
-
-## 🧱 Tech Stack
-
-### Backend
-- **FastAPI**
-- **Pydantic**
-- **OpenRouter (LLM Gateway)**
-- **Requests**
-- **PyPDF2**
-
-### Frontend
-- **React**
-- **Vite**
-- **CSS**
-
-### Deployment
-- **Backend**: Render
-- **Frontend**: Vercel / Netlify
-
----
-
-## 📁 Project Structure
-codeclutch/
-├── backend/
-│ ├── main.py
-│ ├── agents/
-│ │ ├── resume_agent.py
-│ │ ├── question_agent.py
-│ │ └── evaluation_agent.py
-│ ├── schemas/
-│ │ ├── resume.py
-│ │ ├── questions.py
-│ │ └── evaluation.py
-│ ├── utils/
-│ │ └── pdf_parser.py
-│ ├── requirements.txt
-│ └── .env.example
-│
-├── frontend/
-│ ├── src/
-│ │ ├── App.jsx
-│ │ └── main.jsx
-│ ├── public/
-│ ├── index.html
-│ ├── package.json
-│ └── vite.config.js
-│
-└── README.md
-
-
----
-
-## 🔗 Live URLs
-
-- **Backend API**:  
-  https://codeclutch-backend.onrender.com
-
-- **API Documentation**:
-  - Swagger UI: `/docs`
-  - ReDoc: `/redoc`
-
----
-
-## 🧪 API Endpoints
-
-### Analyze Resume
-**POST** `/analyze-resume`
-
-```json
-{
-  "resume_text": "Python, React, FastAPI, SQL"
-}
-
-## Generate Questions
-
-### POST /generate-questions
-
-{
-  "skills": ["Python", "React", "FastAPI"]
-}
-
-## Evaluate Answers
-
-### POST /evaluate-answers
-
-{
-  "qa_pairs": [
-    {
-      "question": "Explain Python decorators",
-      "answer": "Decorators allow..."
-    }
-  ]
-}
-
-## ⚙️ Local Setup
-Backend
+```bash
 cd backend
-python -m venv venv
-venv\Scripts\activate   # Windows
+python -m venv .venv
+.venv\\Scripts\\activate  # on Windows
 pip install -r requirements.txt
-uvicorn main:app --reload
+```
 
-Frontend
+2. Configure environment
+
+```bash
+# in backend/.env
+OPENROUTER_API_KEY=your_api_key_here
+```
+
+3. Run the API
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Swagger UI: http://localhost:8000/docs
+
+### Frontend (React + Vite)
+
+1. Install dependencies
+
+```bash
 cd frontend
 npm install
+```
+
+2. Point the UI at your backend (optional)
+
+- The default base URL in `frontend/src/App.jsx` is `https://codeclutch-backend.onrender.com`.
+- For local development, change `API_BASE` to `http://localhost:8000` before running.
+
+3. Run the dev server
+
+```bash
 npm run dev
+```
 
-## 🔐 Environment Variables
+Open the shown localhost port (typically http://localhost:5173).
 
-Create a .env file in backend/:
-OPENROUTER_API_KEY=your_api_key_here
+## Usage (API examples)
 
+Analyze resume text:
 
-## ⚠️ Never commit API keys to GitHub.
+```bash
+curl -X POST http://localhost:8000/analyze-resume \
+  -H "Content-Type: application/json" \
+  -d '{"resume_text":"Jane Doe\\nSkills: Python, React, AWS"}'
+```
 
-## 🧠 Design Decisions
+Generate questions from extracted skills:
 
-Stateless backend (no database)
-Strict schema validation for all LLM responses
-Agent-based architecture (resume, questions, evaluation)
-Focused on realism rather than toy examples
+```bash
+curl -X POST http://localhost:8000/generate-questions \
+  -H "Content-Type: application/json" \
+  -d '{"skills":["Python","React","AWS"]}'
+```
 
+Evaluate answers:
 
-## 📜 License
+```bash
+curl -X POST http://localhost:8000/evaluate-answers \
+  -H "Content-Type: application/json" \
+  -d '{"qa_pairs":[{"question":"What is React's virtual DOM?","answer":"It is a lightweight in-memory tree..."}]}'
+```
 
-MIT
+## Configuration
 
+- `OPENROUTER_API_KEY` (required): OpenRouter API token used by all LLM agents.
+- CORS is currently open to `*`; tighten this in production.
+- PDF uploads: only `.pdf` files are accepted for `/analyze-resume-pdf`.
+
+## Getting Help
+
+- API docs: run the backend and visit `/docs` or `/redoc`.
+- Issues: use GitHub Issues for bugs or feature requests.
+- Questions: open a discussion or issue with clear reproduction steps.
+
+## Contributing
+
+- Check existing issues and milestones before starting work.
+- Open a small PR referencing the issue; include concise tests or manual steps.
+- Keep secrets out of commits; use `.env` locally. If you add docs, prefer linking them from this README rather than inlining lengthy guides.
+
+## Maintainers
+
+- Primary maintainer: project team at CodeClutch. Contributions are welcome via pull requests.
+
+## License
+
+- See LICENSE (if present in the repository).
